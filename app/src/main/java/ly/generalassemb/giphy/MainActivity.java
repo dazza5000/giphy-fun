@@ -1,9 +1,11 @@
 package ly.generalassemb.giphy;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -36,14 +38,12 @@ import static com.squareup.haha.guava.base.Ascii.checkNotNull;
 
 public class MainActivity extends AppCompatActivity {
     public static final String ENDPOINT =
-            "http://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&rating=pg&limit=100";
+            "http://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&rating=pg&limit=20";
 
     public final static String LOG_TAG = "MainActivity";
 
     private List<Giphy> giphyList;
-    private ImageView giphyView;
-    private ImageView giphyView2;
-    private ImageView giphyView3;
+    private RecyclerView giphyRecyclerView;
     private GifDrawable gifDrawable;
 
     @Override
@@ -51,90 +51,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        giphyView = (ImageView) findViewById(R.id.giphy_view);
-        giphyView2 = (ImageView) findViewById(R.id.giphy_view2);
-        giphyView3 = (ImageView) findViewById(R.id.giphy_view3);
-
+        giphyRecyclerView = (RecyclerView) findViewById(R.id.giphy_recycler_view);
+        giphyRecyclerView.setLayoutManager(new GridLayoutManager(MainActivity.this, 2));
 
 
         final GiphyListener gifListener = gifs -> {
 
             giphyList = gifs;
 
-            Toast.makeText(MainActivity.this,
-                    giphyList.get(0).getGifUrl(), Toast.LENGTH_SHORT).show();
-
-            String gifUrl = giphyList.get(new Random().nextInt(giphyList.size())).getGifUrl();
-            String gifUrl2 = giphyList.get(new Random().nextInt(giphyList.size())).getGifUrl();
-            String gifUrl3 = giphyList.get(new Random().nextInt(giphyList.size())).getGifUrl();
-
-            Log.d("TAG", "the gifurl is: " +gifUrl);
-
-
-
-//            GifRequestBuilder<Drawable> thumbnailRequest = Glide.with(MainActivity.this)
-//                    .load(gifUrl)
-//                    .apply(decodeTypeOf(Bitmap.class));
-
-            Glide.with(MainActivity.this).load(gifUrl)
-                    .crossFade()
-                    .diskCacheStrategy(DiskCacheStrategy.SOURCE)
-                    .listener(new RequestListener<String, GlideDrawable>() {
-                        @Override
-                        public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
-                            // do something
-                            Log.d(LOG_TAG,"onException");
-                            return false;
-                        }
-
-                        @Override
-                        public boolean onResourceReady(GlideDrawable resource, String model, Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
-                            // do something
-                            Log.d(LOG_TAG,"onResourceReady");
-                            return false;
-                        }
-                    })
-                    .into(giphyView);
-
-            Glide.with(MainActivity.this).load(gifUrl2)
-                    .crossFade()
-                    .diskCacheStrategy(DiskCacheStrategy.SOURCE)
-                    .listener(new RequestListener<String, GlideDrawable>() {
-                        @Override
-                        public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
-                            // do something
-                            Log.d(LOG_TAG,"onException");
-                            return false;
-                        }
-
-                        @Override
-                        public boolean onResourceReady(GlideDrawable resource, String model, Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
-                            // do something
-                            Log.d(LOG_TAG,"onResourceReady");
-                            return false;
-                        }
-                    })
-                    .into(giphyView2);
-
-            Glide.with(MainActivity.this).load(gifUrl3)
-                    .crossFade()
-                    .diskCacheStrategy(DiskCacheStrategy.SOURCE)
-                    .listener(new RequestListener<String, GlideDrawable>() {
-                        @Override
-                        public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
-                            // do something
-                            Log.d(LOG_TAG,"onException");
-                            return false;
-                        }
-
-                        @Override
-                        public boolean onResourceReady(GlideDrawable resource, String model, Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
-                            // do something
-                            Log.d(LOG_TAG,"onResourceReady");
-                            return false;
-                        }
-                    })
-                    .into(giphyView3);
+            giphyRecyclerView.setAdapter(new GifAdapter(MainActivity.this, giphyList,
+                    new GifItemListener() {
+                @Override
+                public void onGifClick(Giphy clickedGif) {
+                    Toast.makeText(MainActivity.this, "you clicked me", Toast.LENGTH_SHORT).show();
+                }
+            }));
 
 
         };
@@ -224,8 +155,10 @@ public class MainActivity extends AppCompatActivity {
                 for(int i = 0; i < quoteArray.length(); i++){
                     JSONObject images = quoteArray.getJSONObject(i).getJSONObject("images");
                     JSONObject original = images.getJSONObject("original");
+                    JSONObject original_still = images.getJSONObject("original_still");
                     String imageUrl = original.getString("url");
-                    Giphy chuckJoke = new Giphy(imageUrl);
+                    String thumbnailUrl = original.getString("url");
+                    Giphy chuckJoke = new Giphy(imageUrl, thumbnailUrl);
                     quotesList.add(chuckJoke);
 
                 }
@@ -296,6 +229,10 @@ public class MainActivity extends AppCompatActivity {
                         }
                     })
                     .into(viewHolder.gifImageView);
+
+            Random rnd = new Random();
+            int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+            viewHolder.gifImageView.setBackgroundColor(color);
         }
 
         public void replaceData(List<Giphy> giphies) {

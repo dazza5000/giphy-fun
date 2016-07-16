@@ -6,12 +6,18 @@ package ly.generalassemb.giphy;
 public class Giphy {
     private String id;
     private String gifUrl;
+    private String thumbnailUrl;
 
-    public Giphy(String gifUrl) {
+    public Giphy(String gifUrl, String thumbnailUrl) {
         this.gifUrl = gifUrl;
+        this.thumbnailUrl = thumbnailUrl;
     }
 
     public String getGifUrl() {
         return gifUrl;
+    }
+
+    public String getThumbnailUrl() {
+        return thumbnailUrl;
     }
 }
