@@ -33,6 +33,8 @@ import java.util.Random;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import rx.Observable;
+import rx.Observer;
 
 import static com.squareup.haha.guava.base.Ascii.checkNotNull;
 
@@ -45,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     private List<Giphy> giphyList;
     private RecyclerView giphyRecyclerView;
     private GifDrawable gifDrawable;
+
+    private GifAsync gifAsync;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +67,8 @@ public class MainActivity extends AppCompatActivity {
                     new GifItemListener() {
                 @Override
                 public void onGifClick(Giphy clickedGif) {
-                    Toast.makeText(MainActivity.this, "you clicked me", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, clickedGif.getGiphyUrl(),
+                            Toast.LENGTH_SHORT).show();
                 }
             }));
 
@@ -71,7 +76,8 @@ public class MainActivity extends AppCompatActivity {
         };
 
 
-        new GifAsync(gifListener).execute();
+        gifAsync = new GifAsync(gifListener);
+        gifAsync.execute();
 
 
 
@@ -102,12 +108,36 @@ public class MainActivity extends AppCompatActivity {
 //                    }
 //                });
 
+        Observable.just("a", "b", "c").subscribe(new Observer<String>() {
+            // Triggered for each emitted value
+            // Invoked with "a", then "b", then "c"
+            @Override
+            public void onNext(String s) {
+                System.out.println("onNext: " + s);
+            }
+
+            // Triggered once the observable is complete
+            @Override
+            public void onCompleted() { System.out.println("done!"); }
+
+            // Triggered if there is any errors during the event
+            @Override
+            public void onError(Throwable e) { }
+        });
+
+        FlickrFetchr.FetchItemsTask flickrTask = new FlickrFetchr.FetchItemsTask();
+        flickrTask.execute();
+
     }
+
+
 
 //    public Observable<String> getImageNetworkCall() {
 //        // Insert network call here!
 //        return Observable.just("we");
 //    }
+
+
 
 
 
@@ -153,12 +183,14 @@ public class MainActivity extends AppCompatActivity {
                 JSONArray quoteArray = chuckObject.getJSONArray("data");
 
                 for(int i = 0; i < quoteArray.length(); i++){
-                    JSONObject images = quoteArray.getJSONObject(i).getJSONObject("images");
+                    JSONObject giphyItem = quoteArray.getJSONObject(i);
+                    JSONObject images = giphyItem.getJSONObject("images");
                     JSONObject original = images.getJSONObject("original");
                     JSONObject original_still = images.getJSONObject("original_still");
+                    String giphyUrl = giphyItem.getString("url");
                     String imageUrl = original.getString("url");
                     String thumbnailUrl = original.getString("url");
-                    Giphy chuckJoke = new Giphy(imageUrl, thumbnailUrl);
+                    Giphy chuckJoke = new Giphy(giphyUrl, imageUrl, thumbnailUrl);
                     quotesList.add(chuckJoke);
 
                 }
@@ -280,5 +312,9 @@ public class MainActivity extends AppCompatActivity {
         void onGifClick(Giphy clickedGif);
     }
 
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        gifAsync.cancel(true);
+    }
 }
